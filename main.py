@@ -6,12 +6,12 @@ from threading import Thread
 import telebot
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(_name_)
 
 raw_token = os.environ.get('TELEGRAM_TOKEN', '')
 TOKEN = raw_token.replace('\n', '').replace('\r', '').replace(' ', '').strip()
 
-app = Flask(__name__)
+app = Flask(_name_)
 
 @app.route('/')
 def home():
@@ -22,7 +22,6 @@ bot = None
 if TOKEN and ":" in TOKEN:
     try:
         bot = telebot.TeleBot(TOKEN)
-        # Limpiar cualquier webhook bloqueado en Telegram
         bot.delete_webhook(drop_pending_updates=True)
         logger.info("Webhook eliminado y bot preparado correctamente.")
     except Exception as e:
@@ -34,11 +33,11 @@ if bot:
         try:
             bot.reply_to(
                 message,
-                "📈 **SEÑAL DE BINOMO DETECTADA** 📈\n\n"
-                "🟢 **Operación:** ¡Bot Sincronizado y Conectado!\n"
-                "🪙 **Activo:** Crypto IDX\n"
-                "⏱️ **Temporalidad:** 1 a 5 minutos\n"
-                "💡 **Estrategia:** EMA 20 + RSI 14\n"
+                "📈 *SEÑAL DE BINOMO DETECTADA* 📈\n\n"
+                "🟢 *Operación:* ¡Bot Sincronizado y Conectado!\n"
+                "🪙 *Activo:* Crypto IDX\n"
+                "⏱️ *Temporalidad:* 1 a 5 minutos\n"
+                "💡 *Estrategia:* EMA 20 + RSI 14\n"
                 "✨ ¡Abundancia y éxito en la operación!",
                 parse_mode="Markdown"
             )
@@ -58,7 +57,6 @@ if bot:
     tg_thread.daemon = True
     tg_thread.start()
 
-if __name__ == '__main__':
+if _name_ == '_main_':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
-    
