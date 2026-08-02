@@ -9,17 +9,17 @@ import telebot
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Obtener token de las variables de entorno
-TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
+# Obtener token y limpiar cualquier espacio o salto de línea oculto del teléfono
+raw_token = os.environ.get('TELEGRAM_TOKEN', '')
+TOKEN = raw_token.replace('\n', '').replace('\r', '').replace(' ', '').strip()
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    token_status = f"Configurado (Largo: {len(TOKEN)})" if TOKEN else "NO DETECTADO ❌"
+    token_status = f"Configurado correctamente (Largo: {len(TOKEN)})" if TOKEN else "NO DETECTADO ❌"
     return f"Bot_Binomo en Render 🚀<br><br><b>Token:</b> {token_status}"
 
-# Configurar el bot con protección contra errores
 bot = None
 if TOKEN and ":" in TOKEN:
     try:
@@ -29,7 +29,7 @@ if TOKEN and ":" in TOKEN:
     except Exception as e:
         logger.error(f"Error al configurar Telegram: {e}")
 else:
-    logger.warning("ATENCIÓN: TELEGRAM_TOKEN está vacío o no contiene los dos puntos (:).")
+    logger.warning("ATENCIÓN: TELEGRAM_TOKEN está vacío o formato incorrecto.")
 
 if bot:
     @bot.message_handler(commands=['start', 'help'])
