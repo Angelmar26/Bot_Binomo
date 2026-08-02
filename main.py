@@ -16,18 +16,22 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Bot_Binomo está activo y operando en Render 🚀"
+    token_status = f"Configurado (Largo: {len(TOKEN)})" if TOKEN else "NO DETECTADO ❌"
+    return f"Bot_Binomo en Render 🚀<br><br><b>Token:</b> {token_status}"
 
-if TOKEN:
-    bot = telebot.TeleBot(TOKEN)
-    
-    # Limpiar cualquier webhook anterior para permitir la lectura de mensajes
+# Configurar el bot con protección contra errores
+bot = None
+if TOKEN and ":" in TOKEN:
     try:
+        bot = telebot.TeleBot(TOKEN)
         bot.remove_webhook()
-        logger.info("Webhook previo eliminado correctamente.")
+        logger.info("Bot de Telegram inicializado correctamente.")
     except Exception as e:
-        logger.error(f"No se pudo eliminar el webhook: {e}")
+        logger.error(f"Error al configurar Telegram: {e}")
+else:
+    logger.warning("ATENCIÓN: TELEGRAM_TOKEN está vacío o no contiene los dos puntos (:).")
 
+if bot:
     @bot.message_handler(commands=['start', 'help'])
     def send_welcome(message):
         try:
@@ -45,7 +49,6 @@ if TOKEN:
             logger.error(f"Error respondiendo /start: {e}")
 
     def run_telegram_bot():
-        logger.info("Iniciando el ciclo del bot de Telegram...")
         while True:
             try:
                 bot.infinity_polling(timeout=60, long_polling_timeout=60)
@@ -53,13 +56,11 @@ if TOKEN:
                 logger.error(f"Error en polling de Telegram: {e}")
                 time.sleep(15)
 
-    # Iniciar el hilo del bot de forma inmediata
     tg_thread = Thread(target=run_telegram_bot)
     tg_thread.daemon = True
     tg_thread.start()
-else:
-    logger.warning("ATENCIÓN: TELEGRAM_TOKEN no está configurado en las variables de entorno de Render.")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
+    
