@@ -5,11 +5,9 @@ from flask import Flask
 from threading import Thread
 import telebot
 
-# Configuración de registros
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Obtener token y limpiar cualquier espacio o salto de línea oculto del teléfono
 raw_token = os.environ.get('TELEGRAM_TOKEN', '')
 TOKEN = raw_token.replace('\n', '').replace('\r', '').replace(' ', '').strip()
 
@@ -24,12 +22,11 @@ bot = None
 if TOKEN and ":" in TOKEN:
     try:
         bot = telebot.TeleBot(TOKEN)
-        bot.remove_webhook()
-        logger.info("Bot de Telegram inicializado correctamente.")
+        # Limpiar cualquier webhook bloqueado en Telegram
+        bot.delete_webhook(drop_pending_updates=True)
+        logger.info("Webhook eliminado y bot preparado correctamente.")
     except Exception as e:
         logger.error(f"Error al configurar Telegram: {e}")
-else:
-    logger.warning("ATENCIÓN: TELEGRAM_TOKEN está vacío o formato incorrecto.")
 
 if bot:
     @bot.message_handler(commands=['start', 'help'])
@@ -51,6 +48,7 @@ if bot:
     def run_telegram_bot():
         while True:
             try:
+                logger.info("Iniciando escucha de Telegram...")
                 bot.infinity_polling(timeout=60, long_polling_timeout=60)
             except Exception as e:
                 logger.error(f"Error en polling de Telegram: {e}")
