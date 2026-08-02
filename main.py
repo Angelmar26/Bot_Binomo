@@ -18,7 +18,7 @@ app = Flask(__name__)
 def home():
     return "Bot_Binomo está activo y operando en Render 🚀"
 
-# Configurar el bot de Telegram solo si el token existe para evitar caídas
+# Configurar e iniciar el bot de Telegram de forma global (para que corra siempre en segundo plano)
 if TOKEN:
     bot = telebot.TeleBot(TOKEN)
 
@@ -46,17 +46,16 @@ if TOKEN:
             except Exception as e:
                 logger.error(f"Error en polling de Telegram: {e}")
                 time.sleep(15)
+
+    # Iniciar el hilo del bot inmediatamente al cargar el módulo
+    tg_thread = Thread(target=run_telegram_bot)
+    tg_thread.daemon = True
+    tg_thread.start()
 else:
-    bot = None
     logger.warning("ATENCIÓN: TELEGRAM_TOKEN no está configurado en las variables de entorno de Render.")
 
 if __name__ == '__main__':
-    if TOKEN:
-        # Hilo independiente para Telegram
-        tg_thread = Thread(target=run_telegram_bot)
-        tg_thread.daemon = True
-        tg_thread.start()
-
     # Iniciar el servidor web de Flask requerido por Render
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
+    
