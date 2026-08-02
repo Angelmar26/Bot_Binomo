@@ -14,14 +14,24 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    token_status = f"Configurado correctamente (Largo: {len(TOKEN)})" if TOKEN else "NO DETECTADO ❌"
-    return f"Bot_Binomo en Render 🚀<br><br><b>Token:</b> {token_status}"
+    return "Bot_Binomo en Render 🚀 Activo y funcionando!"
 
-bot = None
-if TOKEN and ":" in TOKEN:
-    try:
-        bot = telebot.TeleBot(TOKEN)
-        bot.delete_webhook(drop_pending_updates=True)
-        logger.info("Webhook eliminado y bot preparado correctamente.")
-    except Exception as e:
-        logger.error(f"Error al configurar Telegram: {e}")
+bot = telebot.TeleBot(TOKEN) if TOKEN and ":" in TOKEN else None
+
+if bot:
+    @bot.message_handler(commands=['start'])
+    def send_welcome(message):
+        bot.reply_to(message, "¡Hola Angélica! Tu bot de Binomo está activo y conectado correctamente. 🚀")
+
+    def run_bot():
+        logger.info("Iniciando polling del bot de Telegram...")
+        bot.infinity_polling(skip_pending=True)
+
+    # Iniciar el bot en un hilo separado para que no bloquee a Flask
+    t = Thread(target=run_bot)
+    t.daemon = True
+    t.start()
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
