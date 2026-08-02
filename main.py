@@ -7,9 +7,9 @@ import telebot
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-TOKEN = "8891979485:AAGQMNMziGbL6VralAMWNLc_TTvg5hWJBG0"
+TOKEN = "8663305401:AAH4Bc428UheAjM1LaMRGYwgbac6SozUjBE"
 
-# 1. Configurar Flask para que corra en segundo plano y mantenga el puerto de Render abierto
+# 1. Configurar Flask para que corra en segundo plano manteniendo contento a Render
 app = Flask(__name__)
 
 @app.route('/')
@@ -24,12 +24,12 @@ flask_thread = Thread(target=run_flask)
 flask_thread.daemon = True
 flask_thread.start()
 
-# 2. Configurar el bot de Telegram
+# 2. Configurar el bot de Telegram en el hilo principal
 bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "¡Hola Angélica! Tu bot de Binomo está activo y conectado correctamente. 🚀")
+    bot.reply_to(message, "¡Hola Angélica! Tu bot nuevo de Binomo está activo y conectado correctamente. 🚀")
 
 if __name__ == '__main__':
     logger.info("Iniciando polling del bot de Telegram...")
