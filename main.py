@@ -17,8 +17,8 @@ def run_flask():
 Thread(target=run_flask, daemon=True).start()
 
 # Configuración de tu Bot de Telegram
-TOKEN = '8663305401:AAH4Bc428UheAjM1LaMRGYwbac6SozUjBE'
-bot = telebot.TeleBot(TOKEN)
+TOKEN = '8663305401:AAEC8sLqNfaKcdP8ICDaal3uHZm0gN9wC4w'
+bot = telebot.TeleBot(TOKEN) 
 bot.remove_webhook()
 
 chat_id_global = None
