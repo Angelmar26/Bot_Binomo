@@ -9,16 +9,22 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Bot de Señales - Crypto IDX Activo"
+    return "Bot de Señales - Crypto IDX 24/7 Activo"
 
 def run_flask():
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)), use_reloader=False)
+    while True:
+        try:
+            app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)), use_reloader=False)
+        except Exception as e:
+            print(f"Error en servidor Flask: {e}")
+            time.sleep(5)
 
 Thread(target=run_flask, daemon=True).start()
 
 TOKEN = '8663305401:AAEC8sLqNfaKcdP8ICDaal3uHZm0gN9wC4w'
 bot = telebot.TeleBot(TOKEN)
 
+# Limpieza inicial de seguridad
 try:
     bot.remove_webhook()
     time.sleep(2)
@@ -48,8 +54,8 @@ def send_welcome(welcome_message):
     chat_id = welcome_message.chat.id
     guardar_chat_id(chat_id)
     bot.reply_to(welcome_message, 
-                 "🤖 ¡Sistema vinculado correctamente!\n\n"
-                 "Tu chat ha sido guardado en el servidor. El bot ahora te enviará las señales automáticas cada 5 minutos sin interrupciones.")
+                 "🤖 ¡Sistema de señales 24/7 vinculado con éxito!\n\n"
+                 "Tu chat ha quedado registrado de forma permanente. El bot operará de manera continua enviando tus alertas automáticas.")
 
 def calcular_rsi(precios, periodo=14):
     if len(precios) < periodo + 1:
@@ -72,7 +78,7 @@ def calcular_rsi(precios, periodo=14):
 
 contador_pasos = 0
 
-def generar_senal_activa():
+def generar_senal_tu_estilo():
     global contador_pasos
     contador_pasos += 1
     
@@ -97,13 +103,13 @@ def generar_senal_activa():
         
     return tipo, calidad, rsi_val
 
-def loop_senales():
+def loop_senales_infinito():
     while True:
-        time.sleep(300)
-        chat_id = leer_chat_id()
-        if chat_id:
-            try:
-                tipo, calidad, rsi_val = generar_senal_activa()
+        try:
+            time.sleep(300) # Ciclo exacto de 5 minutos
+            chat_id = leer_chat_id()
+            if chat_id:
+                tipo, calidad, rsi_val = generar_senal_tu_estilo()
                 mensaje = (
                     f"🚨 **SEÑAL AUTOMÁTICA - CRIPTO IDX** 🚨\n\n"
                     f"* **Operación:** {tipo}\n"
@@ -114,19 +120,19 @@ def loop_senales():
                     f"Reactiva con 👍 si ganaste / 👎 si perdió."
                 )
                 bot.send_message(chat_id, mensaje, parse_mode="Markdown")
-            except Exception as e:
-                print(f"Error en loop: {e}")
-        else:
-            print("Esperando registro de chat...")
+        except Exception as e:
+            print(f"Error menor en loop de señales (autorecuperando): {e}")
+            time.sleep(10)
 
 if __name__ == "__main__":
-    Thread(target=loop_senales, daemon=True).start()
-    print("Sincronizando con Telegram...")
-    time.sleep(15)
+    Thread(target=loop_senales_infinito, daemon=True).start()
+    print("Iniciando motor de Telegram 24/7...")
+    time.sleep(5)
     
+    # Bucle indestructible de polling para Telegram
     while True:
         try:
-            bot.infinity_polling(skip_pending=True)
+            bot.infinity_polling(skip_pending=True, timeout=60, long_polling_timeout=60)
         except Exception as e:
-            print(f"Reconectando por conflicto: {e}")
-            time.sleep(10)
+            print(f"Reconexión de emergencia por red: {e}. Reintentando en 5 segundos...")
+            time.sleep(5)
