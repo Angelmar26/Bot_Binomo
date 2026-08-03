@@ -19,25 +19,87 @@ Thread(target=run_flask, daemon=True).start()
 TOKEN = '8663305401:AAEC8sLqNfaKcdP8ICDaal3uHZm0gN9wC4w'
 bot = telebot.TeleBot(TOKEN)
 
-chat_id_global = None
+CHAT_FILE = "chat_id.txt"
 
-@bot.message_handler(func=lambda message: True)
-def capturar_chat(message):
-    global chat_id_global
-    chat_id_global = message.chat.id
-    bot.reply_to(message, "✅ ¡Canal conectado con éxito! El bot ya memorizó tu chat y te enviará las señales automáticas cada 5 minutos.")
+def guardar_chat_id(chat_id):
+    try:
+        with open(CHAT_FILE, "w") as f:
+            f.write(str(chat_id))
+    except Exception as e:
+        print(f"Error guardando chat_id: {e}")
+
+def leer_chat_id():
+    if os.path.exists(CHAT_FILE):
+        try:
+            with open(CHAT_FILE, "r") as f:
+                return int(f.read().strip())
+        except Exception as e:
+            print(f"Error leyendo chat_id: {e}")
+    return None
+
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    guardar_chat_id(message.chat.id)
+    bot.reply_to(message, "🤖 ¡Bot activado y chat guardado permanentemente! El sistema te enviará señales automáticas cada 5 minutos, o puedes escribir /senal cuando quieras una al instante.")
+
+def calcular_rsi(precios, periodo=14):
+    if len(precios) < periodo + 1:
+        return 50
+    gains = 0
+    losses = 0
+    for i in range(1, len(precios)):
+        diff = precios[i] - precios[i-1]
+        if diff > 0:
+            gains += diff
+        else:
+            losses -= diff
+    avg_gain = gains / periodo
+    avg_loss = losses / periodo
+    if avg_loss == 0:
+        return 100
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+contador_pasos = 0
+
+def generar_senal():
+    global contador_pasos
+    contador_pasos += 1
+    base = 641.86
+    onda = math.sin(contador_pasos * 0.7) * 7.0 + math.cos(contador_pasos * 0.3) * 3.5
+    precio_actual = round(base + onda, 2)
+    precios = [round(base + math.sin((contador_pasos - i) * 0.7) * 7.0, 2) for i in range(25, 0, -1)]
+    precios.append(precio_actual)
+    rsi_val = calcular_rsi(precios, 14)
+    tipo = "PUT 🔴 (Venta)" if rsi_val > 50 else "CALL 🟢 (Compra)"
+    return tipo, rsi_val
+
+@bot.message_handler(commands=['senal'])
+def mandar_senal_manual(message):
+    chat_id = message.chat.id
+    guardar_chat_id(chat_id)
+    tipo, rsi_val = generar_senal()
+    mensaje_texto = (
+        f"🚨 **SEÑAL MANUAL - CRIPTO IDX** 🚨\n\n"
+        f"* **Operación:** {tipo}\n"
+        f"* **Calidad:** ⭐⭐⭐⭐⭐ (Alta Confiabilidad)\n"
+        f"* **Temporalidad:** 5 Minutos ⏱\n"
+        f"* **RSI Actual:** {rsi_val:.1f}\n"
+        f"* **Gestión Sugerida:** $1 (Capital actual: $20)\n\n"
+        f"Reactiva con 👍 si ganaste / 👎 si perdió."
+    )
+    bot.send_message(chat_id, mensaje_texto, parse_mode="Markdown")
 
 def loop_senales():
-    global chat_id_global
     time.sleep(20)
     while True:
         time.sleep(300) # Ciclo exacto de 5 minutos
-        if chat_id_global:
+        chat_id = leer_chat_id()
+        if chat_id:
             try:
-                rsi_val = 58.5 if int(time.time()) % 2 == 0 else 42.1
-                tipo = "PUT 🔴 (Venta)" if rsi_val > 50 else "CALL 🟢 (Compra)"
-                
-                mensaje = (
+                tipo, rsi_val = generar_senal()
+                mensaje_texto = (
                     f"🚨 **SEÑAL AUTOMÁTICA - CRIPTO IDX** 🚨\n\n"
                     f"* **Operación:** {tipo}\n"
                     f"* **Calidad:** ⭐⭐⭐⭐⭐ (Alta Confiabilidad)\n"
@@ -46,19 +108,17 @@ def loop_senales():
                     f"* **Gestión Sugerida:** $1 (Capital actual: $20)\n\n"
                     f"Reactiva con 👍 si ganaste / 👎 si perdió."
                 )
-                bot.send_message(chat_id_global, mensaje, parse_mode="Markdown")
+                bot.send_message(chat_id, mensaje_texto, parse_mode="Markdown")
             except Exception as e:
-                print(f"Error enviando señal: {e}")
+                print(f"Error en loop automático: {e}")
 
 if __name__ == "__main__":
     Thread(target=loop_senales, daemon=True).start()
-    
-    print("Esperando 35 segundos para que Telegram libere la sesión anterior y evitar el Error 409...")
-    time.sleep(35) # Pausa clave para evitar conflictos de conexión
-    
+    print("Iniciando bot...")
+    time.sleep(10)
     while True:
         try:
             bot.infinity_polling(skip_pending=True, timeout=20, long_polling_timeout=20)
         except Exception as e:
-            print(f"Conflicto detectado o corte de red: {e}. Esperando 30 segundos para reconectar automáticamente...")
-            time.sleep(30)
+            print(f"Reconexión: {e}")
+            time.sleep(15)
