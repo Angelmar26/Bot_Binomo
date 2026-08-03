@@ -5,7 +5,6 @@ from flask import Flask
 import telebot
 import random
 
-# Configuración de Flask para mantener el servicio activo en Render
 app = Flask(__name__)
 
 @app.route('/')
@@ -18,9 +17,8 @@ def run_flask():
 Thread(target=run_flask, daemon=True).start()
 
 # Configuración de tu Bot de Telegram
-# REEMPLAZA 'TU_TOKEN_AQUI' CON EL TOKEN REAL DE BOTFATHER (debe incluir los dos puntos ':')
-TOKEN = '8663305401:AAH4Bc428UheAjMlLaMRGYwgbac6SozUjBE'
-bot = telebot.TeleBot(TOKEN) 
+TOKEN = '8663305401:AAH4Bc428UheAjM1LaMRGYwbac6SozUjBE'
+bot = telebot.TeleBot(TOKEN)
 bot.remove_webhook()
 
 chat_id_global = None
@@ -86,18 +84,18 @@ def generar_senal_tecnica():
     # Temporalidad dinámica basada en volatilidad
     ancho = upper_b - lower_b
     if ancho > 0.8:
-        temporalidad = "5 Minutos ⏱️ (Alta volatilidad)"
+        temporalidad = "5 Minutos ⏱ (Alta volatilidad)"
     else:
-        temporalidad = "3 Minutos ⏱️ (Temporalidad estándar)"
+        temporalidad = "3 Minutos ⏱ (Temporalidad estándar)"
         
     # Decisión técnica
-    if precio_actual <= lower_b and rsi_val <= 35 and e20 > e50:
-        tipo = "CALL 🟢 (Compra)"
-    elif precio_actual >= upper_b and rsi_val >= 65 and e20 < e50:
+    if rsi_val > 65 or precio_actual > upper_b:
         tipo = "PUT 🔴 (Venta)"
+    elif rsi_val < 35 or precio_actual < lower_b:
+        tipo = "CALL 🟢 (Compra)"
     else:
         tipo = random.choice(["CALL 🟢 (Compra)", "PUT 🔴 (Venta)"])
-        
+
     mensaje = (
         f"🚨 **NUEVA SEÑAL - CRIPTO IDX** 🚨\n\n"
         f"* **Operación:** {tipo}\n"
@@ -118,7 +116,6 @@ def loop_senales():
             except Exception as e:
                 print(f"Error enviando señal: {e}")
 
-Thread(target=loop_senales, daemon=True).start()
-
 if __name__ == "__main__":
-    bot.infinity_polling()
+    Thread(target=loop_senales, daemon=True).start()
+    bot.infinity_polling(skip_pending=True)
