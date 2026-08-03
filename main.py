@@ -6,6 +6,7 @@ import telebot
 TOKEN = "8663305401:AAH4Bc428UheAjM1LaMRGYwgbac6SozUjBE"
 
 app = Flask(__name__)
+
 @app.route('/')
 def home():
     return "OK"
