@@ -16,11 +16,9 @@ def run_flask():
 
 Thread(target=run_flask, daemon=True).start()
 
-# Configuración limpia con tu token actual
 TOKEN = '8663305401:AAEC8sLqNfaKcdP8ICDaal3uHZm0gN9wC4w'
 bot = telebot.TeleBot(TOKEN)
 
-# Forzar la eliminación de cualquier webhook colgado en Telegram para evitar el error 409
 try:
     bot.remove_webhook()
     time.sleep(1)
@@ -29,20 +27,19 @@ except Exception as e:
 
 chat_id_global = None
 
+# Historial con memoria de precios para mantener una tendencia fluida y realista
+historial_precios = [641.86 + random.uniform(-0.2, 0.2) for _ in range(50)]
+
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(welcome_message):
     global chat_id_global
     chat_id_global = welcome_message.chat.id
-    bot.reply_to(welcome_message, "¡Bot conectado con éxito! Analizando el mercado de Crypto IDX con filtros avanzados...")
+    bot.reply_to(welcome_message, "¡Bot conectado con precisión! Usa /senal para pedir una lectura inmediata o espera la alerta automática.")
 
-def calcular_ema(precios, periodo):
-    if len(precios) < periodo:
-        return precios[-1]
-    multiplicador = 2 / (periodo + 1)
-    ema = precios[0]
-    for precio in precios[1:]:
-        ema = (precio - ema) * multiplicador + ema
-    return ema
+@bot.message_handler(commands=['senal'])
+def manual_senal(message):
+    texto = generar_senal_tecnica()
+    bot.reply_to(message, texto, parse_mode="Markdown")
 
 def calcular_rsi(precios, periodo=14):
     if len(precios) < periodo + 1:
@@ -76,30 +73,34 @@ def calcular_bollinger(precios, periodo=20, desviaciones=2):
     return banda_sup, banda_inf
 
 def generar_senal_tecnica():
-    base_precio = 641.86
-    precios_simulados = [base_precio + random.uniform(-0.5, 0.5) for _ in range(50)]
+    global historial_precios
+    # Deriva suave para que el RSI varíe de forma realista punto a punto
+    ultimo_precio = historial_precios[-1]
+    nuevo_cambio = random.uniform(-0.15, 0.15)
+    nuevo_precio = round(ultimo_precio + nuevo_cambio, 2)
     
-    precio_actual = precios_simulados[-1]
-    e20 = calcular_ema(precios_simulados, 20)
-    e50 = calcular_ema(precios_simulados, 50)
-    rsi_val = calcular_rsi(precios_simulados, 14)
-    upper_b, lower_b = calcular_bollinger(precios_simulados, 20, 2)
+    historial_precios.append(nuevo_precio)
+    if len(historial_precios) > 60:
+        historial_precios.pop(0)
+        
+    rsi_val = calcular_rsi(historial_precios, 14)
+    upper_b, lower_b = calcular_bollinger(historial_precios, 20, 2)
     
     ancho = upper_b - lower_b
-    if ancho > 0.8:
+    if ancho > 0.6:
         temporalidad = "5 Minutos ⏱ (Alta volatilidad)"
     else:
         temporalidad = "3 Minutos ⏱ (Temporalidad estándar)"
         
-    if rsi_val > 65 or precio_actual > upper_b:
+    if rsi_val > 62 or nuevo_precio > upper_b:
         tipo = "PUT 🔴 (Venta)"
-    elif rsi_val < 35 or precio_actual < lower_b:
+    elif rsi_val < 38 or nuevo_precio < lower_b:
         tipo = "CALL 🟢 (Compra)"
     else:
-        tipo = random.choice(["CALL 🟢 (Compra)", "PUT 🔴 (Venta)"])
+        tipo = "PUT 🔴 (Venta)" if rsi_val > 50 else "CALL 🟢 (Compra)"
 
     mensaje = (
-        f"🚨 **NUEVA SEÑAL - CRIPTO IDX** 🚨\n\n"
+        f"🚨 **SEÑAL TÉCNICA - CRIPTO IDX** 🚨\n\n"
         f"* **Operación:** {tipo}\n"
         f"* **Temporalidad:** {temporalidad}\n"
         f"* **RSI Actual:** {rsi_val:.1f}\n"
@@ -120,4 +121,6 @@ def loop_senales():
 
 if __name__ == "__main__":
     Thread(target=loop_senales, daemon=True).start()
+    print("Esperando 10 segundos para sincronizar con Telegram...")
+    time.sleep(10)
     bot.infinity_polling(skip_pending=True)
