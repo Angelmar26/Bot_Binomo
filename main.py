@@ -19,7 +19,7 @@ Thread(target=run_flask, daemon=True).start()
 
 # Configuración de tu Bot de Telegram
 # REEMPLAZA 'TU_TOKEN_AQUI' CON EL TOKEN REAL DE BOTFATHER (debe incluir los dos puntos ':')
-TOKEN = 'TU_TOKEN_AQUI'
+TOKEN = '8663305401:AAH4Bc428UheAjMlLaMRGYwgbac6SozUjBE'
 bot = telebot.TeleBot(TOKEN)
 
 chat_id_global = None
