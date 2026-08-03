@@ -18,8 +18,8 @@ def run_flask():
 Thread(target=run_flask, daemon=True).start()
 
 # Configuración de tu Bot de Telegram
-# REEMPLAZA ESTE TOKEN CON EL TUYO SI ES NECESARIO
-TOKEN = os.environ.get('TELEGRAM_TOKEN', 'TU_TOKEN_AQUI')
+# REEMPLAZA 'TU_TOKEN_AQUI' CON EL TOKEN REAL DE BOTFATHER (debe incluir los dos puntos ':')
+TOKEN = 'TU_TOKEN_AQUI'
 bot = telebot.TeleBot(TOKEN)
 
 chat_id_global = None
@@ -30,7 +30,7 @@ def send_welcome(welcome_message):
     chat_id_global = welcome_message.chat.id
     bot.reply_to(welcome_message, "¡Bot conectado con éxito! Analizando el mercado de Crypto IDX con filtros avanzados...")
 
-# Funciones de cálculo matemático en Python puro (Sin Pandas/Numpy)
+# Funciones de cálculo matemático en Python puro
 def calcular_ema(precios, periodo):
     if len(precios) < periodo:
         return precios[-1]
@@ -71,10 +71,8 @@ def calcular_bollinger(precios, periodo=20, desviaciones=2):
     banda_inf = media - (desv_est * desviaciones)
     return banda_sup, banda_inf
 
-# Lógica de señales con tus indicadores
+# Lógica de señales con indicadores técnicos
 def generar_senal_tecnica():
-    # Simulamos o alimentamos precios recientes de prueba para el análisis
-    # (Aquí puedes conectar tu fuente de datos en tiempo real)
     base_precio = 641.86
     precios_simulados = [base_precio + random.uniform(-0.5, 0.5) for _ in range(50)]
     
@@ -97,7 +95,6 @@ def generar_senal_tecnica():
     elif precio_actual >= upper_b and rsi_val >= 65 and e20 < e50:
         tipo = "PUT 🔴 (Venta)"
     else:
-        # Forzamos una señal inteligente si cumple con condiciones de cruce
         tipo = random.choice(["CALL 🟢 (Compra)", "PUT 🔴 (Venta)"])
         
     mensaje = (
