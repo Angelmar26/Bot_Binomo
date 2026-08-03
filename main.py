@@ -2,7 +2,7 @@ import os
 import time
 import math
 from threading import Thread
-from Flask import Flask
+from flask import Flask
 import telebot
 
 app = Flask(__name__)
@@ -25,7 +25,6 @@ try:
 except Exception as e:
     print(f"Error limpiando webhook: {e}")
 
-# Archivo de persistencia para que el bot nunca olvide tu chat al dormirse el servidor
 CHAT_FILE = "chat_id.txt"
 
 def guardar_chat_id(chat_id):
@@ -100,7 +99,7 @@ def generar_senal_activa():
 
 def loop_senales():
     while True:
-        time.sleep(300) # Cada 5 minutos exactos
+        time.sleep(300)
         chat_id = leer_chat_id()
         if chat_id:
             try:
