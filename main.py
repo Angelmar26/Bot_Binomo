@@ -3,13 +3,12 @@ import time
 from threading import Thread
 from flask import Flask
 import telebot
-import random
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Bot de Señales - Crypto IDX Activo (Modo Estricto)"
+    return "Bot de Señales - Crypto IDX Activo"
 
 def run_flask():
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)), use_reloader=False)
@@ -19,14 +18,14 @@ Thread(target=run_flask, daemon=True).start()
 TOKEN = '8663305401:AAEC8sLqNfaKcdP8ICDaal3uHZm0gN9wC4w'
 bot = telebot.TeleBot(TOKEN)
 
+# Limpieza inicial de webhooks pendientes
 try:
     bot.remove_webhook()
-    time.sleep(1)
+    time.sleep(2)
 except Exception as e:
     print(f"Error limpiando webhook: {e}")
 
 chat_id_global = None
-historial_precios = [641.86 + random.uniform(-0.2, 0.2) for _ in range(50)]
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(welcome_message):
@@ -46,7 +45,6 @@ def manual_senal(message):
             bot.reply_to(message, "⚠️ Debes incluir el valor del RSI. Ejemplo: `/senal 72`", parse_mode="Markdown")
             return
             
-        # FILTROS ESTRICTOS DE ALTA PROBABILIDAD
         if rsi_val >= 68:
             tipo = "PUT 🔴 (Venta - Sobrecompra Fuerte)"
             temporalidad = "5 Minutos ⏱ (Alta Confluencia)"
@@ -83,6 +81,13 @@ def loop_senales():
 
 if __name__ == "__main__":
     Thread(target=loop_senales, daemon=True).start()
-    print("Esperando 10 segundos para sincronizar con Telegram...")
-    time.sleep(10)
-    bot.infinity_polling(skip_pending=True)
+    print("Esperando 15 segundos para sincronizar con Telegram...")
+    time.sleep(15)
+    
+    # Bucle de seguridad para reintentar automáticamente ante cualquier conflicto de red
+    while True:
+        try:
+            bot.infinity_polling(skip_pending=True)
+        except Exception as e:
+            print(f"Conflicto detectado: {e}. Reconectando en 10 segundos...")
+            time.sleep(10)
