@@ -24,7 +24,6 @@ Thread(target=run_flask, daemon=True).start()
 TOKEN = '8663305401:AAEC8sLqNfaKcdP8ICDaal3uHZm0gN9wC4w'
 bot = telebot.TeleBot(TOKEN)
 
-# Limpieza inicial de seguridad
 try:
     bot.remove_webhook()
     time.sleep(2)
@@ -54,8 +53,8 @@ def send_welcome(welcome_message):
     chat_id = welcome_message.chat.id
     guardar_chat_id(chat_id)
     bot.reply_to(welcome_message, 
-                 "🤖 ¡Sistema de señales 24/7 vinculado con éxito!\n\n"
-                 "Tu chat ha quedado registrado de forma permanente. El bot operará de manera continua enviando tus alertas automáticas.")
+                 "🤖 ¡Sistema vinculado con éxito!\n\n"
+                 "Tu chat ha quedado registrado. Recibirás la primera señal de prueba en unos segundos y luego alertas automáticas cada 5 minutos.")
 
 def calcular_rsi(precios, periodo=14):
     if len(precios) < periodo + 1:
@@ -104,9 +103,10 @@ def generar_senal_tu_estilo():
     return tipo, calidad, rsi_val
 
 def loop_senales_infinito():
+    # Pequeña pausa inicial de cortesía para asegurar que el bot encienda bien
+    time.sleep(15)
     while True:
         try:
-            time.sleep(300) # Ciclo exacto de 5 minutos
             chat_id = leer_chat_id()
             if chat_id:
                 tipo, calidad, rsi_val = generar_senal_tu_estilo()
@@ -120,16 +120,19 @@ def loop_senales_infinito():
                     f"Reactiva con 👍 si ganaste / 👎 si perdió."
                 )
                 bot.send_message(chat_id, mensaje, parse_mode="Markdown")
+            else:
+                print("Esperando registro de chat...")
         except Exception as e:
-            print(f"Error menor en loop de señales (autorecuperando): {e}")
-            time.sleep(10)
+            print(f"Error en loop de señales: {e}")
+        
+        # Espera de 5 minutos entre señal y señal
+        time.sleep(300)
 
 if __name__ == "__main__":
     Thread(target=loop_senales_infinito, daemon=True).start()
     print("Iniciando motor de Telegram 24/7...")
     time.sleep(5)
     
-    # Bucle indestructible de polling para Telegram
     while True:
         try:
             bot.infinity_polling(skip_pending=True, timeout=60, long_polling_timeout=60)
