@@ -16,10 +16,16 @@ def run_flask():
 
 Thread(target=run_flask, daemon=True).start()
 
-# Configuración de tu Bot de Telegram
+# Configuración limpia con tu token actual
 TOKEN = '8663305401:AAEC8sLqNfaKcdP8ICDaal3uHZm0gN9wC4w'
-bot = telebot.TeleBot(TOKEN) 
-bot.remove_webhook()
+bot = telebot.TeleBot(TOKEN)
+
+# Forzar la eliminación de cualquier webhook colgado en Telegram para evitar el error 409
+try:
+    bot.remove_webhook()
+    time.sleep(1)
+except Exception as e:
+    print(f"Error limpiando webhook: {e}")
 
 chat_id_global = None
 
@@ -29,7 +35,6 @@ def send_welcome(welcome_message):
     chat_id_global = welcome_message.chat.id
     bot.reply_to(welcome_message, "¡Bot conectado con éxito! Analizando el mercado de Crypto IDX con filtros avanzados...")
 
-# Funciones de cálculo matemático en Python puro
 def calcular_ema(precios, periodo):
     if len(precios) < periodo:
         return precios[-1]
@@ -70,7 +75,6 @@ def calcular_bollinger(precios, periodo=20, desviaciones=2):
     banda_inf = media - (desv_est * desviaciones)
     return banda_sup, banda_inf
 
-# Lógica de señales con indicadores técnicos
 def generar_senal_tecnica():
     base_precio = 641.86
     precios_simulados = [base_precio + random.uniform(-0.5, 0.5) for _ in range(50)]
@@ -81,14 +85,12 @@ def generar_senal_tecnica():
     rsi_val = calcular_rsi(precios_simulados, 14)
     upper_b, lower_b = calcular_bollinger(precios_simulados, 20, 2)
     
-    # Temporalidad dinámica basada en volatilidad
     ancho = upper_b - lower_b
     if ancho > 0.8:
         temporalidad = "5 Minutos ⏱ (Alta volatilidad)"
     else:
         temporalidad = "3 Minutos ⏱ (Temporalidad estándar)"
         
-    # Decisión técnica
     if rsi_val > 65 or precio_actual > upper_b:
         tipo = "PUT 🔴 (Venta)"
     elif rsi_val < 35 or precio_actual < lower_b:
@@ -108,7 +110,7 @@ def generar_senal_tecnica():
 
 def loop_senales():
     while True:
-        time.sleep(300) # Espera 5 minutos
+        time.sleep(300)
         if chat_id_global:
             try:
                 texto = generar_senal_tecnica()
@@ -118,4 +120,4 @@ def loop_senales():
 
 if __name__ == "__main__":
     Thread(target=loop_senales, daemon=True).start()
-    bot.infinity_polling(skip_pending=True) 
+    bot.infinity_polling(skip_pending=True)
