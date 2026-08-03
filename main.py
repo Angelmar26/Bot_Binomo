@@ -2,7 +2,7 @@ import os
 import time
 import math
 from threading import Thread
-from flask import Flask
+from Flask import Flask
 import telebot
 
 app = Flask(__name__)
@@ -25,15 +25,32 @@ try:
 except Exception as e:
     print(f"Error limpiando webhook: {e}")
 
-chat_id_global = None
+# Archivo de persistencia para que el bot nunca olvide tu chat al dormirse el servidor
+CHAT_FILE = "chat_id.txt"
+
+def guardar_chat_id(chat_id):
+    try:
+        with open(CHAT_FILE, "w") as f:
+            f.write(str(chat_id))
+    except Exception as e:
+        print(f"Error guardando chat_id: {e}")
+
+def leer_chat_id():
+    if os.path.exists(CHAT_FILE):
+        try:
+            with open(CHAT_FILE, "r") as f:
+                return int(f.read().strip())
+        except Exception as e:
+            print(f"Error leyendo chat_id: {e}")
+    return None
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(welcome_message):
-    global chat_id_global
-    chat_id_global = welcome_message.chat.id
+    chat_id = welcome_message.chat.id
+    guardar_chat_id(chat_id)
     bot.reply_to(welcome_message, 
-                 "🤖 ¡Sistema de señales automáticas restaurado y activo!\n\n"
-                 "El bot ya está programado para enviar alertas fluidas y constantes cada 5 minutos.")
+                 "🤖 ¡Sistema vinculado correctamente!\n\n"
+                 "Tu chat ha sido guardado en el servidor. El bot ahora te enviará las señales automáticas cada 5 minutos sin interrupciones.")
 
 def calcular_rsi(precios, periodo=14):
     if len(precios) < periodo + 1:
@@ -83,8 +100,9 @@ def generar_senal_activa():
 
 def loop_senales():
     while True:
-        time.sleep(300)
-        if chat_id_global:
+        time.sleep(300) # Cada 5 minutos exactos
+        chat_id = leer_chat_id()
+        if chat_id:
             try:
                 tipo, calidad, rsi_val = generar_senal_activa()
                 mensaje = (
@@ -96,9 +114,11 @@ def loop_senales():
                     f"* **Gestión Sugerida:** $1 (Capital actual: $20)\n\n"
                     f"Reactiva con 👍 si ganaste / 👎 si perdió."
                 )
-                bot.send_message(chat_id_global, mensaje, parse_mode="Markdown")
+                bot.send_message(chat_id, mensaje, parse_mode="Markdown")
             except Exception as e:
                 print(f"Error en loop: {e}")
+        else:
+            print("Esperando registro de chat...")
 
 if __name__ == "__main__":
     Thread(target=loop_senales, daemon=True).start()
