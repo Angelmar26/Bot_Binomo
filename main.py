@@ -12,7 +12,10 @@ def home():
     return "Bot de Señales - Activo 24/7"
 
 def run_flask():
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)), use_reloader=False)
+    try:
+        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)), use_reloader=False)
+    except Exception as e:
+        print(f"Flask error: {e}")
 
 Thread(target=run_flask, daemon=True).start()
 
@@ -39,8 +42,12 @@ def leer_chat_id():
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    guardar_chat_id(message.chat.id)
-    bot.reply_to(message, "🤖 ¡Bot activado y chat guardado permanentemente! El sistema te enviará señales automáticas cada 5 minutos, o puedes escribir /senal cuando quieras una al instante.")
+    try:
+        chat_id = message.chat.id
+        guardar_chat_id(chat_id)
+        bot.reply_to(message, "🤖 ¡Bot activado y chat guardado! Escribe /senal para probar una señal ahora mismo o espera las automáticas cada 5 minutos.")
+    except Exception as e:
+        print(f"Error en start: {e}")
 
 def calcular_rsi(precios, periodo=14):
     if len(precios) < periodo + 1:
@@ -77,19 +84,23 @@ def generar_senal():
 
 @bot.message_handler(commands=['senal'])
 def mandar_senal_manual(message):
-    chat_id = message.chat.id
-    guardar_chat_id(chat_id)
-    tipo, rsi_val = generar_senal()
-    mensaje_texto = (
-        f"🚨 **SEÑAL MANUAL - CRIPTO IDX** 🚨\n\n"
-        f"* **Operación:** {tipo}\n"
-        f"* **Calidad:** ⭐⭐⭐⭐⭐ (Alta Confiabilidad)\n"
-        f"* **Temporalidad:** 5 Minutos ⏱\n"
-        f"* **RSI Actual:** {rsi_val:.1f}\n"
-        f"* **Gestión Sugerida:** $1 (Capital actual: $20)\n\n"
-        f"Reactiva con 👍 si ganaste / 👎 si perdió."
-    )
-    bot.send_message(chat_id, mensaje_texto, parse_mode="Markdown")
+    try:
+        chat_id = message.chat.id
+        guardar_chat_id(chat_id)
+        tipo, rsi_val = generar_senal()
+        texto = (
+            "🚨 SEÑAL MANUAL - CRIPTO IDX 🚨\n\n"
+            f"• Operación: {tipo}\n"
+            "• Calidad: ⭐⭐⭐⭐⭐ (Alta Confiabilidad)\n"
+            "• Temporalidad: 5 Minutos ⏱\n"
+            f"• RSI Actual: {rsi_val:.1f}\n"
+            "• Gestión Sugerida: $1 (Capital actual: $20)\n\n"
+            "Reactiva con 👍 si ganaste / 👎 si perdió."
+        )
+        bot.send_message(chat_id, texto)
+    except Exception as e:
+        print(f"Error enviando señal manual: {e}")
+        bot.reply_to(message, f"Error al generar señal: {e}")
 
 def loop_senales():
     time.sleep(20)
@@ -99,23 +110,23 @@ def loop_senales():
         if chat_id:
             try:
                 tipo, rsi_val = generar_senal()
-                mensaje_texto = (
-                    f"🚨 **SEÑAL AUTOMÁTICA - CRIPTO IDX** 🚨\n\n"
-                    f"* **Operación:** {tipo}\n"
-                    f"* **Calidad:** ⭐⭐⭐⭐⭐ (Alta Confiabilidad)\n"
-                    f"* **Temporalidad:** 5 Minutos ⏱\n"
-                    f"* **RSI Actual:** {rsi_val:.1f}\n"
-                    f"* **Gestión Sugerida:** $1 (Capital actual: $20)\n\n"
-                    f"Reactiva con 👍 si ganaste / 👎 si perdió."
+                texto = (
+                    "🚨 SEÑAL AUTOMÁTICA - CRIPTO IDX 🚨\n\n"
+                    f"• Operación: {tipo}\n"
+                    "• Calidad: ⭐⭐⭐⭐⭐ (Alta Confiabilidad)\n"
+                    "• Temporalidad: 5 Minutos ⏱\n"
+                    f"• RSI Actual: {rsi_val:.1f}\n"
+                    "• Gestión Sugerida: $1 (Capital actual: $20)\n\n"
+                    "Reactiva con 👍 si ganaste / 👎 si perdió."
                 )
-                bot.send_message(chat_id, mensaje_texto, parse_mode="Markdown")
+                bot.send_message(chat_id, texto)
             except Exception as e:
                 print(f"Error en loop automático: {e}")
 
 if __name__ == "__main__":
     Thread(target=loop_senales, daemon=True).start()
     print("Iniciando bot...")
-    time.sleep(10)
+    time.sleep(5)
     while True:
         try:
             bot.infinity_polling(skip_pending=True, timeout=20, long_polling_timeout=20)
