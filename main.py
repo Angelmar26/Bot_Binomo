@@ -19,13 +19,6 @@ Thread(target=run_flask, daemon=True).start()
 TOKEN = '8663305401:AAEC8sLqNfaKcdP8ICDaal3uHZm0gN9wC4w'
 bot = telebot.TeleBot(TOKEN)
 
-try:
-    bot.remove_webhook()
-    time.sleep(2)
-except Exception as e:
-    print(f"Error limpiando webhook: {e}")
-
-# Variable en memoria para capturar tu chat al instante
 chat_id_global = None
 
 @bot.message_handler(func=lambda message: True)
@@ -36,13 +29,11 @@ def capturar_chat(message):
 
 def loop_senales():
     global chat_id_global
-    # Pausa inicial de cortesía al arrancar
-    time.sleep(15)
+    time.sleep(20)
     while True:
         time.sleep(300) # Ciclo exacto de 5 minutos
         if chat_id_global:
             try:
-                # Simulación de análisis técnico dinámico
                 rsi_val = 58.5 if int(time.time()) % 2 == 0 else 42.1
                 tipo = "PUT 🔴 (Venta)" if rsi_val > 50 else "CALL 🟢 (Compra)"
                 
@@ -58,17 +49,16 @@ def loop_senales():
                 bot.send_message(chat_id_global, mensaje, parse_mode="Markdown")
             except Exception as e:
                 print(f"Error enviando señal: {e}")
-        else:
-            print("Esperando que envíes un mensaje al bot en Telegram para activar el chat...")
 
 if __name__ == "__main__":
     Thread(target=loop_senales, daemon=True).start()
-    print("Iniciando motor del bot...")
-    time.sleep(5)
+    
+    print("Esperando 35 segundos para que Telegram libere la sesión anterior y evitar el Error 409...")
+    time.sleep(35) # Pausa clave para evitar conflictos de conexión
     
     while True:
         try:
-            bot.infinity_polling(skip_pending=True)
+            bot.infinity_polling(skip_pending=True, timeout=20, long_polling_timeout=20)
         except Exception as e:
-            print(f"Reconectando: {e}")
-            time.sleep(5)
+            print(f"Conflicto detectado o corte de red: {e}. Esperando 30 segundos para reconectar automáticamente...")
+            time.sleep(30)
