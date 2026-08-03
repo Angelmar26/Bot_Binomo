@@ -118,4 +118,4 @@ def loop_senales():
 
 if __name__ == "__main__":
     Thread(target=loop_senales, daemon=True).start()
-    bot.infinity_polling(skip_pending=True)
+    bot.infinity_polling(skip_pending=True) 
