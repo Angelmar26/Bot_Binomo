@@ -5,6 +5,7 @@ from threading import Thread
 from flask import Flask
 import telebot
 
+# --- CONFIGURACIÓN DEL SERVIDOR WEB (Para mantener despierto a Render) ---
 app = Flask(__name__)
 
 @app.route('/')
@@ -17,8 +18,10 @@ def run_flask():
     except Exception as e:
         print(f"Flask error: {e}")
 
+# Iniciar Flask en un hilo secundario
 Thread(target=run_flask, daemon=True).start()
 
+# --- CONFIGURACIÓN DEL BOT DE TELEGRAM ---
 TOKEN = '8663305401:AAEC8sLqNfaKcdP8ICDaal3uHZm0gN9wC4w'
 bot = telebot.TeleBot(TOKEN)
 
@@ -32,12 +35,24 @@ def guardar_chat_id(chat_id):
         print(f"Error guardando chat_id: {e}")
 
 def leer_chat_id():
+    # 1. Intentar leer del archivo local
     if os.path.exists(CHAT_FILE):
         try:
             with open(CHAT_FILE, "r") as f:
-                return int(f.read().strip())
+                content = f.read().strip()
+                if content:
+                    return int(content)
         except Exception as e:
             print(f"Error leyendo chat_id: {e}")
+    
+    # 2. Respaldo por Variable de Entorno (Evita pérdida si Render borra el archivo)
+    env_chat = os.environ.get('DEFAULT_CHAT_ID')
+    if env_chat:
+        try:
+            return int(env_chat)
+        except:
+            pass
+            
     return None
 
 @bot.message_handler(commands=['start'])
@@ -45,10 +60,15 @@ def send_welcome(message):
     try:
         chat_id = message.chat.id
         guardar_chat_id(chat_id)
-        bot.reply_to(message, "🤖 ¡Bot activado con RSI de alta volatilidad! Escribe /senal para probar una señal con valores extremos reales.")
+        bot.reply_to(
+            message, 
+            f"🤖 ¡Bot activado correctamente!\nTu Chat ID ({chat_id}) ha sido registrado.\nEscribe /senal para probar una señal manual."
+        )
+        print(f"Chat ID registrado exitosamente: {chat_id}")
     except Exception as e:
         print(f"Error en start: {e}")
 
+# --- MOTOR DE CÁLCULO RSI Y SEÑALES ---
 def calcular_rsi(precios, periodo=14):
     if len(precios) < periodo + 1:
         return 50
@@ -75,7 +95,6 @@ def generar_senal():
     contador_pasos += 3
     base = 641.86
     
-    # Onda con amplitud y frecuencia agresivas para forzar rangos reales de RSI (sobrecompra/sobreventa)
     onda = math.sin(contador_pasos * 1.3) * 28.0 + math.cos(contador_pasos * 0.6) * 16.0 + ((contador_pasos % 5) * 4.0)
     precio_actual = round(base + onda, 2)
     
@@ -83,14 +102,7 @@ def generar_senal():
     precios.append(precio_actual)
     
     rsi_val = calcular_rsi(precios, 14)
-    
-    # Asegurar que alcances valores extremos lógicos en las pruebas
-    if rsi_val > 78:
-        rsi_val = round(rsi_val, 1)
-    elif rsi_val < 22:
-        rsi_val = round(rsi_val, 1)
-    else:
-        rsi_val = round(rsi_val, 1)
+    rsi_val = round(rsi_val, 1)
 
     if rsi_val >= 60:
         tipo = "PUT 🔴 (Venta - Zona Alta)"
@@ -120,6 +132,7 @@ def mandar_senal_manual(message):
     except Exception as e:
         print(f"Error enviando señal manual: {e}")
 
+# --- BUCLE DE SEÑALES AUTOMÁTICAS ---
 def loop_senales():
     time.sleep(20)
     while True:
@@ -138,9 +151,13 @@ def loop_senales():
                     "Reactiva con 👍 si ganaste / 👎 si perdió."
                 )
                 bot.send_message(chat_id, texto)
+                print(f"Señal automática enviada exitosamente al chat ID: {chat_id}")
             except Exception as e:
                 print(f"Error en loop automático: {e}")
+        else:
+            print("Loop automático en espera: Ningún chat_id registrado todavía. Envía /start en Telegram.")
 
+# --- INICIO DEL PROGRAMA ---
 if __name__ == "__main__":
     Thread(target=loop_senales, daemon=True).start()
     print("Iniciando bot...")
