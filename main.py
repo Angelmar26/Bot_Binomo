@@ -2,7 +2,7 @@ import os
 import time
 import math
 from threading import Thread
-from Flask import Flask
+from flask import Flask  # Corregido: 'flask' en minúscula
 import telebot
 
 app = Flask(__name__)
@@ -52,15 +52,12 @@ def generar_senal():
     contador_pasos += 1
     base = 641.86
     
-    # Ondas independientes para asegurar fluctuación real
     precios_1m = [base + math.sin((contador_pasos - i) * 0.6) * 45.0 for i in range(20, 0, -1)]
     rsi_1m = round(calcular_rsi(precios_1m, 14), 1)
     
     precios_15m = [base + math.sin((contador_pasos - i * 5) * 0.15) * 55.0 for i in range(20, 0, -1)]
     rsi_15m = round(calcular_rsi(precios_15m, 14), 1)
 
-    # LÓGICA DE ALTERNANCIA ESTRICTA Y ALTA PRECISIÓN:
-    # Usamos la fase del contador y el RSI para alternar obligatoriamente y buscar puntos óptimos
     fase_ciclo = contador_pasos % 2
     
     if fase_ciclo == 0 and ultima_senal_tipo != "CALL":
@@ -72,7 +69,6 @@ def generar_senal():
         calidad = "⭐⭐⭐⭐⭐ (Alta Confluencia)"
         ultima_senal_tipo = "PUT"
     else:
-        # Alternativa de respaldo si se repite la fase
         if ultima_senal_tipo == "CALL":
             tipo = "PUT 🔴 (Venta - Reversión de Tendencia)"
             calidad = "⭐⭐⭐⭐⭐ (Alta Confluencia)"
@@ -105,9 +101,14 @@ def loop_senales():
 
 if __name__ == "__main__":
     Thread(target=loop_senales, daemon=True).start()
-    bot.remove_webhook()
+    try:
+        bot.remove_webhook()
+    except:
+        pass
+        
     while True:
         try:
-            bot.infinity_polling(skip_pending=True, timeout=20, long_polling_timeout=20)
+            bot.infinity_polling(skip_pending=True, timeout=10, long_polling_timeout=10)
         except Exception as e:
-            time.sleep(15)
+            print(f"Reconectando por conflicto o red: {e}")
+            time.sleep(10)
