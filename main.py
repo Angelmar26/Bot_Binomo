@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Bot de Señales - Activo 24/7 (Multi-Temporalidad 1M + 15M)"
+    return "Bot de Señales - Activo 24/7 (Multi-Temporalidad + Expiración)"
 
 def run_flask():
     try:
@@ -60,7 +60,7 @@ def send_welcome(message):
         guardar_chat_id(chat_id)
         bot.reply_to(
             message, 
-            f"🤖 ¡Bot actualizado con Filtro Macro (1M + 15M)!\nTu Chat ID ({chat_id}) ha sido registrado.\nEscribe /senal para probar una señal con la nueva confluencia."
+            f"🤖 ¡Bot actualizado con Expiración de Operación!\nTu Chat ID ({chat_id}) ha sido registrado.\nEscribe /senal para probar."
         )
         print(f"Chat ID registrado exitosamente: {chat_id}")
     except Exception as e:
@@ -101,13 +101,12 @@ def generar_senal():
     precios_1m.append(precio_actual)
     rsi_1m = round(calcular_rsi(precios_1m, 14), 1)
 
-    # Simulación de tendencia macro (Velas de 15 Minutos - Efecto Macro)
+    # Simulación de tendencia macro (Velas de 15 Minutos)
     onda_15m = math.sin(contador_pasos * 0.2) * 45.0 + math.cos(contador_pasos * 0.1) * 25.0
     precios_15m = [round(base + math.sin((contador_pasos - i * 3) * 0.2) * 45.0, 2) for i in range(25, 0, -1)]
     rsi_15m = round(calcular_rsi(precios_15m, 14), 1)
 
     # LÓGICA DE CONFLUENCIA ESTRICTA (1M + 15M)
-    # Exigimos que la macro de 15m y la micro de 1m coincidan para evitar falsas entradas
     if rsi_15m > 52 and rsi_1m > 50:
         tipo = "CALL 🟢 (Compra - Alta Confluencia)"
         calidad = "⭐⭐⭐⭐⭐ (Alta Precisión Macro)"
@@ -115,30 +114,38 @@ def generar_senal():
         tipo = "PUT 🔴 (Venta - Alta Confluencia)"
         calidad = "⭐⭐⭐⭐⭐ (Alta Precisión Macro)"
     else:
-        # Si hay divergencia, operamos estrictamente a favor de la fuerza macro de 15m
         if rsi_15m >= 50:
             tipo = "CALL 🟢 (Compra - Impulso Macro 15M)"
             calidad = "⭐⭐⭐⭐ (Filtro Macro)"
         else:
             tipo = "PUT 🔴 (Venta - Impulso Macro 15M)"
             calidad = "⭐⭐⭐⭐ (Filtro Macro)"
+
+    # Determinar la temporalidad de expiración ideal según la fuerza del RSI de 1M
+    fuerza_rsi = abs(rsi_1m - 50)
+    if fuerza_rsi > 12:
+        expiracion = "1 Minuto ⏱"
+    elif fuerza_rsi > 6:
+        expiracion = "3 Minutos ⏱"
+    else:
+        expiracion = "5 Minutos ⏱"
         
-    return tipo, rsi_1m, rsi_15m, calidad
+    return tipo, rsi_1m, rsi_15m, calidad, expiracion
 
 @bot.message_handler(commands=['senal'])
 def mandar_senal_manual(message):
     try:
         chat_id = message.chat.id
         guardar_chat_id(chat_id)
-        tipo, rsi_1m, rsi_15m, calidad = generar_senal()
+        tipo, rsi_1m, rsi_15m, calidad, expiracion = generar_senal()
         
         texto = (
             "🚨 SEÑAL MANUAL - CRIPTO IDX (MULTI-TF) 🚨\n\n"
             f"• Operación: {tipo}\n"
             f"• Calidad: {calidad}\n"
-            "• Estructura: 1 Minuto + 15 Minutos ⏱\n"
+            f"• Expiración Sugerida: {expiracion}\n"
+            "• Análisis: 1 Minuto + 15 Minutos ⏱\n"
             f"• RSI 1M: {rsi_1m} | RSI 15M: {rsi_15m}\n"
-            "• Margen de Error: < 0.1%\n"
             "• Gestión Sugerida: $1 (Capital actual: $20)\n\n"
             "Reactiva con 👍 si ganaste / 👎 si perdió."
         )
@@ -154,14 +161,14 @@ def loop_senales():
         chat_id = leer_chat_id()
         if chat_id:
             try:
-                tipo, rsi_1m, rsi_15m, calidad = generar_senal()
+                tipo, rsi_1m, rsi_15m, calidad, expiracion = generar_senal()
                 texto = (
                     "🚨 SEÑAL AUTOMÁTICA - CRIPTO IDX (MULTI-TF) 🚨\n\n"
                     f"• Operación: {tipo}\n"
                     f"• Calidad: {calidad}\n"
-                    "• Estructura: 1 Minuto + 15 Minutos ⏱\n"
+                    f"• Expiración Sugerida: {expiracion}\n"
+                    "• Análisis: 1 Minuto + 15 Minutos ⏱\n"
                     f"• RSI 1M: {rsi_1m} | RSI 15M: {rsi_15m}\n"
-                    "• Margen de Error: < 0.1%\n"
                     "• Gestión Sugerida: $1 (Capital actual: $20)\n\n"
                     "Reactiva con 👍 si ganaste / 👎 si perdió."
                 )
@@ -175,7 +182,7 @@ def loop_senales():
 # --- INICIO DEL PROGRAMA ---
 if __name__ == "__main__":
     Thread(target=loop_senales, daemon=True).start()
-    print("Iniciando bot con análisis macro de 1M y 15M...")
+    print("Iniciando bot con análisis macro y expiración dinámica...")
     time.sleep(5)
     while True:
         try:
